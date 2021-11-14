@@ -177,6 +177,7 @@ pub mod completers {
             &helix_core::config_dir().join("themes"),
         ));
         names.push("default".into());
+        names.push("base16_default".into());
 
         let mut names: Vec<_> = names
             .into_iter()

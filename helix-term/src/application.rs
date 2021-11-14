@@ -76,17 +76,31 @@ impl Application {
             None => Ok(def_lang_conf),
         };
 
-        let theme = if let Some(theme) = &config.theme {
-            match theme_loader.load(theme) {
-                Ok(theme) => theme,
-                Err(e) => {
-                    log::warn!("failed to load theme `{}` - {}", theme, e);
+        let theme = config
+            .theme
+            .as_ref()
+            .and_then(|theme| {
+                theme_loader
+                    .load(theme)
+                    .map_err(|e| {
+                        log::warn!("failed to load theme `{}` - {}", theme, e);
+                        e
+                    })
+                    .ok()
+            })
+            .unwrap_or_else(|| {
+                use terminfo::{capability::TrueColor, Database};
+                let true_color = Database::from_env()
+                    .ok()
+                    .and_then(|db| db.get::<TrueColor>())
+                    .map(|tc| tc.0)
+                    .unwrap_or(false);
+                if true_color {
                     theme_loader.default()
+                } else {
+                    theme_loader.base16_default()
                 }
-            }
-        } else {
-            theme_loader.default()
-        };
+            });
 
         let syn_loader_conf: helix_core::syntax::Configuration = lang_conf
             .and_then(|conf| conf.try_into())
