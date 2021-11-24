@@ -26,6 +26,22 @@ macro_rules! key {
 }
 
 #[macro_export]
+macro_rules! shift {
+    ($key:ident) => {
+        ::helix_view::input::KeyEvent {
+            code: ::helix_view::keyboard::KeyCode::$key,
+            modifiers: ::helix_view::keyboard::KeyModifiers::SHIFT,
+        }
+    };
+    ($($ch:tt)*) => {
+        ::helix_view::input::KeyEvent {
+            code: ::helix_view::keyboard::KeyCode::Char($($ch)*),
+            modifiers: ::helix_view::keyboard::KeyModifiers::SHIFT,
+        }
+    };
+}
+
+#[macro_export]
 macro_rules! ctrl {
     ($key:ident) => {
         ::helix_view::input::KeyEvent {
@@ -509,6 +525,7 @@ impl Default for Keymaps {
                 "a" => goto_last_accessed_file,
                 "n" => goto_next_buffer,
                 "p" => goto_previous_buffer,
+                "." => goto_last_modification,
             },
             ":" => command_mode,
 
@@ -520,9 +537,9 @@ impl Default for Keymaps {
             "O" => open_above,
 
             "d" => delete_selection,
-            // TODO: also delete without yanking
+            "A-d" => delete_selection_noyank,
             "c" => change_selection,
-            // TODO: also change delete without yanking
+            "A-c" => change_selection_noyank,
 
             "C" => copy_selection_on_next_line,
             "A-C" => copy_selection_on_prev_line,
@@ -565,6 +582,8 @@ impl Default for Keymaps {
 
             "u" => undo,
             "U" => redo,
+            "A-u" => earlier,
+            "A-U" => later,
 
             "y" => yank,
             // yank_all
@@ -577,7 +596,7 @@ impl Default for Keymaps {
             "=" => format_selections,
             "J" => join_selections,
             "K" => keep_selections,
-            // TODO: and another method for inverse
+            "A-K" => remove_selections,
 
             "," => keep_primary_selection,
             "A-," => remove_primary_selection,
@@ -585,8 +604,8 @@ impl Default for Keymaps {
             // "q" => record_macro,
             // "Q" => replay_macro,
 
-            // & align selections
-            // _ trim selections
+            "&" => align_selections,
+            "_" => trim_selections,
 
             "(" => rotate_selections_backward,
             ")" => rotate_selections_forward,
@@ -624,6 +643,7 @@ impl Default for Keymaps {
                 "f" => file_picker,
                 "b" => buffer_picker,
                 "s" => symbol_picker,
+                "S" => workspace_symbol_picker,
                 "a" => code_action,
                 "'" => last_picker,
                 "w" => { "Window"
@@ -651,8 +671,8 @@ impl Default for Keymaps {
                 "t" => align_view_top,
                 "b" => align_view_bottom,
                 "m" => align_view_middle,
-                "k" => scroll_up,
-                "j" => scroll_down,
+                "k" | "up" => scroll_up,
+                "j" | "down" => scroll_down,
                 "C-b" | "pageup" => page_up,
                 "C-f" | "pagedown" => page_down,
                 "C-u" => half_page_up,
@@ -663,8 +683,8 @@ impl Default for Keymaps {
                 "t" => align_view_top,
                 "b" => align_view_bottom,
                 "m" => align_view_middle,
-                "k" => scroll_up,
-                "j" => scroll_down,
+                "k" | "up" => scroll_up,
+                "j" | "down" => scroll_down,
                 "C-b" | "pageup" => page_up,
                 "C-f" | "pagedown" => page_down,
                 "C-u" => half_page_up,
@@ -678,6 +698,9 @@ impl Default for Keymaps {
             "A-!" => shell_append_output,
             "$" => shell_keep_pipe,
             "C-z" => suspend,
+
+            "C-a" => increment,
+            "C-x" => decrement,
         });
         let mut select = normal.clone();
         select.merge_nodes(keymap!({ "Select mode"
@@ -711,21 +734,38 @@ impl Default for Keymaps {
             "esc" => normal_mode,
 
             "backspace" => delete_char_backward,
+            "C-h" => delete_char_backward,
             "del" => delete_char_forward,
+            "C-d" => delete_char_forward,
             "ret" => insert_newline,
             "tab" => insert_tab,
             "C-w" => delete_word_backward,
+            "A-d" => delete_word_forward,
 
             "left" => move_char_left,
+            "C-b" => move_char_left,
             "down" => move_line_down,
+            "C-n" => move_line_down,
             "up" => move_line_up,
+            "C-p" => move_line_up,
             "right" => move_char_right,
+            "C-f" => move_char_right,
+            "A-b" => move_prev_word_end,
+            "A-left" => move_prev_word_end,
+            "A-f" => move_next_word_start,
+            "A-right" => move_next_word_start,
             "pageup" => page_up,
             "pagedown" => page_down,
             "home" => goto_line_start,
+            "C-a" => goto_line_start,
             "end" => goto_line_end_newline,
+            "C-e" => goto_line_end_newline,
+
+            "C-k" => kill_to_line_end,
+            "C-u" => kill_to_line_start,
 
             "C-x" => completion,
+            "C-r" => insert_register,
         });
         Keymaps(hashmap!(
             Mode::Normal => Keymap::new(normal),

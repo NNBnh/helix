@@ -16,7 +16,7 @@ use helix_core::{
     LineEnding, Position, Range, Selection,
 };
 use helix_view::{
-    document::Mode,
+    document::{Mode, SCRATCH_BUFFER_NAME},
     editor::LineNumber,
     graphics::{CursorKind, Modifier, Rect, Style},
     info::Info,
@@ -377,7 +377,7 @@ impl EditorView {
             use helix_core::match_brackets;
             let pos = doc.selection(view.id).primary().cursor(text);
 
-            let pos = match_brackets::find(syntax, doc.text(), pos)
+            let pos = match_brackets::find_matching_bracket(syntax, doc.text(), pos)
                 .and_then(|pos| view.screen_coords_at_pos(doc, text, pos));
 
             if let Some(pos) = pos {
@@ -497,7 +497,7 @@ impl EditorView {
         use tui::{
             layout::Alignment,
             text::Text,
-            widgets::{Paragraph, Widget},
+            widgets::{Paragraph, Widget, Wrap},
         };
 
         let cursor = doc
@@ -529,8 +529,10 @@ impl EditorView {
             lines.extend(text.lines);
         }
 
-        let paragraph = Paragraph::new(lines).alignment(Alignment::Right);
-        let width = 80.min(viewport.width);
+        let paragraph = Paragraph::new(lines)
+            .alignment(Alignment::Right)
+            .wrap(Wrap { trim: true });
+        let width = 100.min(viewport.width);
         let height = 15.min(viewport.height);
         paragraph.render(
             Rect::new(viewport.right() - width, viewport.y + 1, width, height),
@@ -580,18 +582,20 @@ impl EditorView {
         }
         surface.set_string(viewport.x + 5, viewport.y, progress, base_style);
 
-        if let Some(path) = doc.relative_path() {
-            let path = path.to_string_lossy();
+        let rel_path = doc.relative_path();
+        let path = rel_path
+            .as_ref()
+            .map(|p| p.to_string_lossy())
+            .unwrap_or_else(|| SCRATCH_BUFFER_NAME.into());
 
-            let title = format!("{}{}", path, if doc.is_modified() { "[+]" } else { "" });
-            surface.set_stringn(
-                viewport.x + 8,
-                viewport.y,
-                title,
-                viewport.width.saturating_sub(6) as usize,
-                base_style,
-            );
-        }
+        let title = format!("{}{}", path, if doc.is_modified() { "[+]" } else { "" });
+        surface.set_stringn(
+            viewport.x + 8,
+            viewport.y,
+            title,
+            viewport.width.saturating_sub(6) as usize,
+            base_style,
+        );
 
         //-------------------------------
         // Right side of the status line.
@@ -741,7 +745,7 @@ impl EditorView {
                     std::num::NonZeroUsize::new(cxt.editor.count.map_or(i, |c| c.get() * 10 + i));
             }
             // special handling for repeat operator
-            key!('.') => {
+            key!('.') if self.keymaps.pending().is_empty() => {
                 // first execute whatever put us into insert mode
                 self.last_insert.0.execute(cxt);
                 // then replay the inputs
