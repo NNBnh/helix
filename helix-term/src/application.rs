@@ -76,6 +76,9 @@ impl Application {
             None => Ok(def_lang_conf),
         };
 
+        let true_color = std::env::var("COLORTERM")
+            .map(|v| v == "truecolor" || v == "24bit")
+            .unwrap_or(false);
         let theme = config
             .theme
             .as_ref()
@@ -87,12 +90,9 @@ impl Application {
                         e
                     })
                     .ok()
+                    .filter(|theme| (true_color || theme.is_16_color()))
             })
             .unwrap_or_else(|| {
-                let true_color = std::env::var("COLORTERM")
-                    .ok()
-                    .map(|v| v == "truecolor" || v == "24bit")
-                    .unwrap_or(false);
                 if true_color {
                     theme_loader.default()
                 } else {

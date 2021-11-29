@@ -248,6 +248,14 @@ impl Editor {
             return;
         }
 
+        let true_color = std::env::var("COLORTERM")
+            .map(|v| v == "truecolor" || v == "24bit")
+            .unwrap_or(false);
+        if !(true_color || theme.is_16_color()) {
+            self.set_error("Unsupported theme: theme requires true color support".to_owned());
+            return;
+        }
+
         let scopes = theme.scopes();
         for config in self
             .syn_loader

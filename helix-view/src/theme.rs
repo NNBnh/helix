@@ -146,6 +146,14 @@ impl Theme {
     pub fn find_scope_index(&self, scope: &str) -> Option<usize> {
         self.scopes().iter().position(|s| s == scope)
     }
+
+    pub fn is_16_color(&self) -> bool {
+        self.styles.iter().all(|(_, style)| {
+            [style.fg, style.bg]
+                .into_iter()
+                .all(|color| !matches!(color, Some(Color::Rgb(..))))
+        })
+    }
 }
 
 struct ThemePalette {
