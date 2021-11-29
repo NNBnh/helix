@@ -89,11 +89,9 @@ impl Application {
                     .ok()
             })
             .unwrap_or_else(|| {
-                use terminfo::{capability::TrueColor, Database};
-                let true_color = Database::from_env()
+                let true_color = std::env::var("COLORTERM")
                     .ok()
-                    .and_then(|db| db.get::<TrueColor>())
-                    .map(|tc| tc.0)
+                    .map(|v| v == "truecolor" || v == "24bit")
                     .unwrap_or(false);
                 if true_color {
                     theme_loader.default()
