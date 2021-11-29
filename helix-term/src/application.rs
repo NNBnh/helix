@@ -134,7 +134,7 @@ impl Application {
             if first.is_dir() {
                 std::env::set_current_dir(&first)?;
                 editor.new_file(Action::VerticalSplit);
-                compositor.push(Box::new(ui::file_picker(".".into())));
+                compositor.push(Box::new(ui::file_picker(".".into(), &config.editor)));
             } else {
                 let nr_of_files = args.files.len();
                 editor.open(first.to_path_buf(), Action::VerticalSplit)?;
@@ -284,12 +284,8 @@ impl Application {
         }
         let editor_view = self
             .compositor
-            .find(std::any::type_name::<ui::EditorView>())
+            .find::<ui::EditorView>()
             .expect("expected at least one EditorView");
-        let editor_view = editor_view
-            .as_any_mut()
-            .downcast_mut::<ui::EditorView>()
-            .unwrap();
 
         if editor_view.completion.is_some() {
             return;
@@ -454,12 +450,8 @@ impl Application {
                     {
                         let editor_view = self
                             .compositor
-                            .find(std::any::type_name::<ui::EditorView>())
+                            .find::<ui::EditorView>()
                             .expect("expected at least one EditorView");
-                        let editor_view = editor_view
-                            .as_any_mut()
-                            .downcast_mut::<ui::EditorView>()
-                            .unwrap();
                         let lsp::ProgressParams { token, value } = params;
 
                         let lsp::ProgressParamsValue::WorkDone(work) = value;
@@ -573,12 +565,8 @@ impl Application {
 
                         let editor_view = self
                             .compositor
-                            .find(std::any::type_name::<ui::EditorView>())
+                            .find::<ui::EditorView>()
                             .expect("expected at least one EditorView");
-                        let editor_view = editor_view
-                            .as_any_mut()
-                            .downcast_mut::<ui::EditorView>()
-                            .unwrap();
                         let spinner = editor_view.spinners_mut().get_or_create(server_id);
                         if spinner.is_stopped() {
                             spinner.start();
@@ -613,7 +601,7 @@ impl Application {
         Ok(())
     }
 
-    pub async fn run(&mut self) -> Result<(), Error> {
+    pub async fn run(&mut self) -> Result<i32, Error> {
         self.claim_term().await?;
 
         // Exit the alternate screen and disable raw mode before panicking
@@ -636,6 +624,6 @@ impl Application {
 
         self.restore_term()?;
 
-        Ok(())
+        Ok(self.editor.exit_code)
     }
 }
