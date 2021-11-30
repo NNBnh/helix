@@ -104,7 +104,7 @@ pub struct Config {
     pub auto_info: bool,
     pub file_picker: FilePickerConfig,
     /// Set to `true` to override automatic detection of terminal truecolor support in the event of a false negative. Defaults to `false`.
-    pub true_color_override: bool,
+    pub true_color: bool,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
@@ -137,7 +137,7 @@ impl Default for Config {
             completion_trigger_len: 2,
             auto_info: true,
             file_picker: FilePickerConfig::default(),
-            true_color_override: false,
+            true_color: false,
         }
     }
 }
@@ -251,7 +251,7 @@ impl Editor {
             return;
         }
 
-        let true_color = self.config.true_color_override
+        let true_color = self.config.true_color
             || std::env::var("COLORTERM")
                 .map(|v| v == "truecolor" || v == "24bit")
                 .unwrap_or(false);
