@@ -251,15 +251,6 @@ impl Editor {
             return;
         }
 
-        let true_color = self.config.true_color
-            || std::env::var("COLORTERM")
-                .map(|v| v == "truecolor" || v == "24bit")
-                .unwrap_or(false);
-        if !(true_color || theme.is_16_color()) {
-            self.set_error("Unsupported theme: theme requires true color support".to_owned());
-            return;
-        }
-
         let scopes = theme.scopes();
         for config in self
             .syn_loader
@@ -271,16 +262,6 @@ impl Editor {
 
         self.theme = theme;
         self._refresh();
-    }
-
-    pub fn set_theme_from_name(&mut self, theme: &str) -> anyhow::Result<()> {
-        use anyhow::Context;
-        let theme = self
-            .theme_loader
-            .load(theme.as_ref())
-            .with_context(|| format!("failed setting theme `{}`", theme))?;
-        self.set_theme(theme);
-        Ok(())
     }
 
     fn _refresh(&mut self) {

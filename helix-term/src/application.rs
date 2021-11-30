@@ -76,10 +76,7 @@ impl Application {
             None => Ok(def_lang_conf),
         };
 
-        let true_color = config.editor.true_color
-            || std::env::var("COLORTERM")
-                .map(|v| v == "truecolor" || v == "24bit")
-                .unwrap_or(false);
+        let true_color = config.editor.true_color || crate::true_color();
         let theme = config
             .theme
             .as_ref()
